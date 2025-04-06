@@ -510,7 +510,7 @@
         let paymentReference = null;
         
         // API URLs - Change these to your production URLs
-        const API_BASE_URL = 'https://lazeapi-v1-1.onrender.com';
+        const API_BASE_URL = 'https://your-api-url.com/v1';
         
         // Navigation between steps
         function nextStep(currentStep) {
@@ -570,8 +570,8 @@
                 const mediaType = document.querySelector('input[name="mediaType"]:checked').value;
                 if (selectedFiles.length === 0) {
                     // For testing purposes, allow proceeding without media
-                    document.getElementById('media-error').textContent = 'At least one media file is required';
-                    isValid = false;
+                    // document.getElementById('media-error').textContent = 'At least one media file is required';
+                    // isValid = false;
                 } else if (mediaType === 'single' && selectedFiles.length > 1) {
                     document.getElementById('media-error').textContent = 'Single media type can only have one file';
                     isValid = false;
@@ -793,36 +793,34 @@
                     formData.append(`file${index + 1}`, file);
                 });
                 
-                // For testing purposes, simulate a successful API call
-                // In production, uncomment the actual API calls below
-                
+                // Replace this simulation code:
                 // Simulate ad creation
-                setTimeout(() => {
-                    adId = "test-ad-123";
+                // setTimeout(() => {
+                //     adId = "test-ad-123";
                     
-                    // Simulate payment initiation
-                    setTimeout(() => {
-                        paymentReference = "test-ref-" + Math.random().toString(36).substring(2, 10);
+                //     // Simulate payment initiation
+                //     setTimeout(() => {
+                //         paymentReference = "test-ref-" + Math.random().toString(36).substring(2, 10);
                         
-                        // Move to confirmation step
-                        document.getElementById('step3-progress').classList.add('completed');
-                        document.getElementById('step4-progress').classList.add('active');
-                        document.getElementById('step3').classList.remove('active');
-                        document.getElementById('step4').classList.add('active');
+                //         // Move to confirmation step
+                //         document.getElementById('step3-progress').classList.add('completed');
+                //         document.getElementById('step4-progress').classList.add('active');
+                //         document.getElementById('step3').classList.remove('active');
+                //         document.getElementById('step4').classList.add('active');
                         
-                        // Show success state (for testing)
-                        document.getElementById('payment-pending').style.display = 'none';
-                        document.getElementById('payment-success').style.display = 'block';
-                        document.getElementById('success-amount').textContent = formatCurrency(document.getElementById('budget').value);
-                        document.getElementById('success-reference').textContent = paymentReference;
-                        document.getElementById('success-date').textContent = formatDate(new Date());
+                //         // Show success state (for testing)
+                //         document.getElementById('payment-pending').style.display = 'none';
+                //         document.getElementById('payment-success').style.display = 'block';
+                //         document.getElementById('success-amount').textContent = formatCurrency(document.getElementById('budget').value);
+                //         document.getElementById('success-reference').textContent = paymentReference;
+                //         document.getElementById('success-date').textContent = formatDate(new Date());
                         
-                        // In production, uncomment this to redirect to payment page
-                        window.location.href = payment.authorization_url;
-                    }, 1000);
-                }, 1000);
-                
-                // PRODUCTION CODE - Uncomment for actual implementation
+                //         // In production, uncomment this to redirect to payment page
+                //         // window.location.href = payment.authorization_url;
+                //     }, 1000);
+                // }, 1000);
+
+                // With this actual implementation:
                 // Create ad with media
                 const adResponse = await fetch(`${API_BASE_URL}/ads/`, {
                     method: 'POST',
@@ -831,15 +829,15 @@
                     },
                     body: formData
                 });
-                
+
                 if (!adResponse.ok) {
                     const errorData = await adResponse.json();
                     throw new Error(errorData.detail || 'Failed to create ad');
                 }
-                
+
                 const ad = await adResponse.json();
                 adId = ad.id;
-                
+
                 // Initiate payment
                 const paymentData = {
                     ad_id: adId,
@@ -848,7 +846,7 @@
                     email: document.getElementById('email').value,
                     callback_url: `${window.location.origin}/payment-callback`
                 };
-                
+
                 const paymentResponse = await fetch(`${API_BASE_URL}/ads/payment/initiate`, {
                     method: 'POST',
                     headers: {
@@ -857,21 +855,15 @@
                     },
                     body: JSON.stringify(paymentData)
                 });
-                
+
                 if (!paymentResponse.ok) {
                     const errorData = await paymentResponse.json();
                     throw new Error(errorData.detail || 'Failed to initiate payment');
                 }
-                
+
                 const payment = await paymentResponse.json();
                 paymentReference = payment.reference;
-                
-                // Move to confirmation step
-                document.getElementById('step3-progress').classList.add('completed');
-                document.getElementById('step4-progress').classList.add('active');
-                document.getElementById('step3').classList.remove('active');
-                document.getElementById('step4').classList.add('active');
-                
+
                 // Redirect to Paystack payment page
                 window.location.href = payment.authorization_url;
                 
