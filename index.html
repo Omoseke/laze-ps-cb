@@ -569,7 +569,7 @@
                 // Validate media
                 const mediaType = document.querySelector('input[name="mediaType"]:checked').value;
                 if (selectedFiles.length === 0) {
-                    For testing purposes, allow proceeding without media
+                    // For testing purposes, allow proceeding without media
                     document.getElementById('media-error').textContent = 'At least one media file is required';
                     isValid = false;
                 } else if (mediaType === 'single' && selectedFiles.length > 1) {
