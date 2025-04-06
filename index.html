@@ -295,6 +295,15 @@
             word-break: break-all;
             text-align: center;
         }
+        
+        .api-error {
+            color: var(--error-color);
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
@@ -351,7 +360,7 @@
                     <input type="text" id="headline" maxlength="30" placeholder="Short, attention-grabbing headline">
                     
                     <label for="websiteUrl">Website URL (optional):</label>
-                    <input type="url" id="websiteUrl" placeholder="https://example.com">
+                    <input type="url" id="websiteUrl" placeholder="https://example.com" value="https://example.com">
                     <div id="websiteUrl-error" class="error"></div>
                 </div>
                 
@@ -414,6 +423,8 @@
             
             <div id="step3" class="step">
                 <h2>Payment</h2>
+                
+                <div id="api-error" class="api-error" style="display: none;"></div>
                 
                 <div class="form-section">
                     <input type="hidden" id="authToken" name="authToken">
@@ -747,6 +758,9 @@
                 return;
             }
             
+            // Hide any previous API errors
+            document.getElementById('api-error').style.display = 'none';
+            
             // Disable submit button and show loading
             const submitButton = document.getElementById('submitButton');
             submitButton.disabled = true;
@@ -764,14 +778,20 @@
                 // Prepare form data
                 const formData = new FormData();
                 
+                // Get website URL - ensure it's not empty
+                let websiteUrl = document.getElementById('websiteUrl').value.trim();
+                if (!websiteUrl) {
+                    websiteUrl = "https://example.com"; // Default URL if empty
+                }
+                
                 // Add ad data as JSON
                 const adData = {
                     name: document.getElementById('campaignName').value,
                     objective: document.getElementById('objective').value,
                     details: {
                         content: document.getElementById('content').value,
-                        headline: document.getElementById('headline').value,
-                        website_url: document.getElementById('websiteUrl').value,
+                        headline: document.getElementById('headline').value || null,
+                        website_url: websiteUrl,
                         media_type: document.querySelector('input[name="mediaType"]:checked').value
                     },
                     targeting: {
@@ -786,6 +806,7 @@
                     end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
                 };
                 
+                console.log("Submitting ad data:", JSON.stringify(adData, null, 2));
                 formData.append('ad_data', JSON.stringify(adData));
                 
                 // Add media files
@@ -793,80 +814,93 @@
                     formData.append(`file${index + 1}`, file);
                 });
                 
-                // Replace this simulation code:
-                // Simulate ad creation
-                // setTimeout(() => {
-                //     adId = "test-ad-123";
-                    
-                //     // Simulate payment initiation
-                //     setTimeout(() => {
-                //         paymentReference = "test-ref-" + Math.random().toString(36).substring(2, 10);
-                        
-                //         // Move to confirmation step
-                //         document.getElementById('step3-progress').classList.add('completed');
-                //         document.getElementById('step4-progress').classList.add('active');
-                //         document.getElementById('step3').classList.remove('active');
-                //         document.getElementById('step4').classList.add('active');
-                        
-                //         // Show success state (for testing)
-                //         document.getElementById('payment-pending').style.display = 'none';
-                //         document.getElementById('payment-success').style.display = 'block';
-                //         document.getElementById('success-amount').textContent = formatCurrency(document.getElementById('budget').value);
-                //         document.getElementById('success-reference').textContent = paymentReference;
-                //         document.getElementById('success-date').textContent = formatDate(new Date());
-                        
-                //         // In production, uncomment this to redirect to payment page
-                //         // window.location.href = payment.authorization_url;
-                //     }, 1000);
-                // }, 1000);
-
-                // With this actual implementation:
-                // Create ad with media
-                const adResponse = await fetch(`${API_BASE_URL}/ads/`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: formData
-                });
-
-                if (!adResponse.ok) {
-                    const errorData = await adResponse.json();
-                    throw new Error(errorData.detail || 'Failed to create ad');
+                // For testing purposes, add a dummy file if no files were selected
+                if (selectedFiles.length === 0) {
+                    // Create a small blank image as a placeholder
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 400;
+                    canvas.height = 400;
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#f0f0f0';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    canvas.toBlob(function(blob) {
+                        formData.append('file1', blob, 'placeholder.jpg');
+                    }, 'image/jpeg', 0.95);
                 }
-
-                const ad = await adResponse.json();
-                adId = ad.id;
-
-                // Initiate payment
-                const paymentData = {
-                    ad_id: adId,
-                    amount: parseFloat(document.getElementById('budget').value),
-                    currency: "NGN",
-                    email: document.getElementById('email').value,
-                    callback_url: `${window.location.origin}/payment-callback`
-                };
-
-                const paymentResponse = await fetch(`${API_BASE_URL}/ads/payment/initiate`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(paymentData)
-                });
-
-                if (!paymentResponse.ok) {
-                    const errorData = await paymentResponse.json();
-                    throw new Error(errorData.detail || 'Failed to initiate payment');
-                }
-
-                const payment = await paymentResponse.json();
-                paymentReference = payment.reference;
-
-                // Redirect to Paystack payment page
-                window.location.href = payment.authorization_url;
                 
+                try {
+                    // Create ad with media
+                    const adResponse = await fetch(`${API_BASE_URL}/ads/`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: formData
+                    });
+
+                    // Handle API errors
+                    if (!adResponse.ok) {
+                        const errorData = await adResponse.json();
+                        console.error("API Error:", errorData);
+                        
+                        // Display error message
+                        const apiErrorElement = document.getElementById('api-error');
+                        apiErrorElement.textContent = errorData.detail || 'Failed to create ad';
+                        apiErrorElement.style.display = 'block';
+                        
+                        throw new Error(errorData.detail || 'Failed to create ad');
+                    }
+
+                    const ad = await adResponse.json();
+                    adId = ad.id;
+
+                    // Initiate payment
+                    const paymentData = {
+                        ad_id: adId,
+                        amount: parseFloat(document.getElementById('budget').value),
+                        currency: "NGN",
+                        email: document.getElementById('email').value,
+                        callback_url: `${window.location.origin}/payment-callback`
+                    };
+
+                    const paymentResponse = await fetch(`${API_BASE_URL}/ads/payment/initiate`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(paymentData)
+                    });
+
+                    if (!paymentResponse.ok) {
+                        const errorData = await paymentResponse.json();
+                        
+                        // Display error message
+                        const apiErrorElement = document.getElementById('api-error');
+                        apiErrorElement.textContent = errorData.detail || 'Failed to initiate payment';
+                        apiErrorElement.style.display = 'block';
+                        
+                        throw new Error(errorData.detail || 'Failed to initiate payment');
+                    }
+
+                    const payment = await paymentResponse.json();
+                    paymentReference = payment.reference;
+
+                    // Redirect to Paystack payment page
+                    window.location.href = payment.authorization_url;
+                } catch (error) {
+                    console.error('API Error:', error);
+                    
+                    // Display error in API error element
+                    const apiErrorElement = document.getElementById('api-error');
+                    apiErrorElement.textContent = error.message || 'An error occurred while processing your request';
+                    apiErrorElement.style.display = 'block';
+                    
+                    // Re-enable submit button
+                    submitButton.disabled = false;
+                    document.getElementById('submitLoading').style.display = 'none';
+                    document.getElementById('submitText').textContent = 'Launch Campaign';
+                }
                 
             } catch (error) {
                 console.error('Error:', error);
@@ -902,10 +936,10 @@
                 document.getElementById('payment-error').style.display = 'none';
                 
                 // Get auth token
-                const token = localStorage.getItem('authToken');
-            if (!token) {
-                throw new Error('Authentication required');
-            }
+                const token = localStorage.getItem('authToken') || document.getElementById('token').value;
+                if (!token) {
+                    throw new Error('Authentication required');
+                }
                 
                 // Call API to verify payment
                 const response = await fetch(`${API_BASE_URL}/ads/payment/verify/${reference}`, {
