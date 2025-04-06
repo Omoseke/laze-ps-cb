@@ -235,7 +235,7 @@
         const token = localStorage.getItem('authToken');
         
         // Call your backend API
-        const response = await fetch(`https://your-api-url.com/v1/ads/payment/verify/${reference}`, {
+        const response = await fetch(`https://lazeapi-v1-1.onrender.com/v1/ads/payment/verify/${reference}`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -274,8 +274,8 @@
             const reference = params.reference || params.trxref || 'unknown';
             
             // Set up button links
-            document.getElementById('dashboard-btn').href = '/dashboard'; // Change to your actual dashboard URL
-            document.getElementById('retry-btn').href = '/create-ad'; // Change to your ad creation page
+            // document.getElementById('dashboard-btn').href = '/dashboard'; // Change to your actual dashboard URL
+            // document.getElementById('retry-btn').href = '/create-ad'; // Change to your ad creation page
             
             // Verify the payment
             verifyPayment(reference);
